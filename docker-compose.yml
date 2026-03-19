@@ -1,0 +1,42 @@
+services:
+  # 1. A nossa "Crappy API"
+  api:
+    image: kennethreitz/httpbin
+    ports:
+      - "8000:80"
+
+  # 2. O Prometheus (Substitui o InfluxDB)
+  prometheus:
+    image: prom/prometheus:latest
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--web.enable-remote-write-receiver" # <-- A correção está aqui!
+    ports:
+      - "9090:9090"
+
+  # 3. O Grafana
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    volumes:
+      # Injetamos as nossas configurações automáticas no Grafana
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+    depends_on:
+      - prometheus
+
+  # 4. O k6 configurado para o Prometheus
+  k6:
+    image: grafana/k6
+    profiles:
+      - teste-manual
+    environment:
+      - K6_PROMETHEUS_RW_SERVER_URL=http://prometheus:9090/api/v1/write
+      - K6_PROMETHEUS_RW_TREND_AS_NATIVE_HISTOGRAM=true
+    volumes:
+      - ./scripts:/scripts
+    command: run -o experimental-prometheus-rw /scripts/script.js
+    depends_on:
+      - api
+      - prometheus
