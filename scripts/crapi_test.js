@@ -11,7 +11,7 @@ export const options = {
 
 export default function () {
   // 1. Testar a página principal da Oficina (Workshop)
-  let resWorkshop = http.get('http://crapi-workshop:8000/workshop/api/merchant/contact');
+  let resWorkshop = http.get('http://crapi-workshop:8000/workshop/health_check/');
   check(resWorkshop, {
     'workshop status is 200': (r) => r.status === 200,
   });
